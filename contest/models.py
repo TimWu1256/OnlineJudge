@@ -46,6 +46,7 @@ class Contest(models.Model):
     # 是否有权查看problem 的一些统计信息 诸如submission_number, accepted_number 等
     def problem_details_permission(self, user):
         return self.rule_type == ContestRuleType.ACM or \
+               self.rule_type == ContestRuleType.IPC or \
                self.status == ContestStatus.CONTEST_ENDED or \
                user.is_authenticated and user.is_contest_admin(self) or \
                self.real_time_rank
@@ -87,6 +88,16 @@ class OIContestRank(AbstractContestRank):
         db_table = "oi_contest_rank"
         unique_together = (("user", "contest"),)
 
+class IPCContestRank(AbstractContestRank):
+    time_cost = models.IntegerField(default=0)
+    memory_cost = models.IntegerField(default=0)
+    # {"23": {"time_cost": 42, "memory_cost": 9388032}}
+    # key is problem id
+    submission_info = JSONField(default=dict)
+
+    class Meta:
+        db_table = "ipc_contest_rank"
+        unique_together = (("user", "contest"),)
 
 class ContestAnnouncement(models.Model):
     contest = models.ForeignKey(Contest, on_delete=models.CASCADE)

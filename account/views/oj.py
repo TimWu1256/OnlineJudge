@@ -382,8 +382,10 @@ class UserRankAPI(APIView):
             .select_related("user")
         if rule_type == ContestRuleType.ACM:
             profiles = profiles.filter(submission_number__gt=0).order_by("-accepted_number", "submission_number")
-        else:
+        elif rule_type == ContestRuleType.OI:
             profiles = profiles.filter(total_score__gt=0).order_by("-total_score")
+        elif rule_type == ContestRuleType.IPC:
+            profiles = profiles.filter(submission_number__gt=0).order_by("-time_cost", "memory_cost")
         return self.success(self.paginate_data(request, profiles, RankInfoSerializer))
 
 

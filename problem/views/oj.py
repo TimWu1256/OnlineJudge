@@ -89,8 +89,10 @@ class ContestProblemAPI(APIView):
             profile = request.user.userprofile
             if self.contest.rule_type == ContestRuleType.ACM:
                 problems_status = profile.acm_problems_status.get("contest_problems", {})
-            else:
+            elif self.contest.rule_type == ContestRuleType.OI:
                 problems_status = profile.oi_problems_status.get("contest_problems", {})
+            elif self.contest.rule_type == ContestRuleType.IPC:
+                problems_status = profile.ipc_problems_status.get("contest_problems", {})
             for problem in queryset_values:
                 problem["my_status"] = problems_status.get(str(problem["id"]), {}).get("status")
 

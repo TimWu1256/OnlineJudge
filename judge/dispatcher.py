@@ -9,7 +9,7 @@ from django.db.models import F
 
 from account.models import User
 from conf.models import JudgeServer
-from contest.models import ContestRuleType, ACMContestRank, OIContestRank, ContestStatus
+from contest.models import ContestRuleType, ACMContestRank, OIContestRank, IPCContestRank, ContestStatus
 from options.options import SysOptions
 from problem.models import Problem, ProblemRuleType
 from problem.utils import parse_problem_template
@@ -177,7 +177,7 @@ class JudgeDispatcher(DispatcherBase):
             # OI模式下, 若多个测试点全部正确则AC， 若全部错误则取第一个错误测试点状态，否则为部分正确
             if not error_test_case:
                 self.submission.result = JudgeStatus.ACCEPTED
-            elif self.problem.rule_type == ProblemRuleType.ACM or len(error_test_case) == len(resp["data"]):
+            elif self.problem.rule_type == ProblemRuleType.ACM or self.problem.rule_type == ProblemRuleType.IPC or len(error_test_case) == len(resp["data"]):
                 self.submission.result = error_test_case[0]["result"]
             else:
                 self.submission.result = JudgeStatus.PARTIALLY_ACCEPTED
@@ -224,7 +224,7 @@ class JudgeDispatcher(DispatcherBase):
                 profile.acm_problems_status["problems"] = acm_problems_status
                 profile.save(update_fields=["accepted_number", "acm_problems_status"])
 
-            else:
+            elif problem.rule_type == ProblemRuleType.OI:
                 oi_problems_status = profile.oi_problems_status.get("problems", {})
                 score = self.submission.statistic_info["score"]
                 if oi_problems_status[problem_id]["status"] != JudgeStatus.ACCEPTED:
@@ -237,6 +237,19 @@ class JudgeDispatcher(DispatcherBase):
                         profile.accepted_number += 1
                 profile.oi_problems_status["problems"] = oi_problems_status
                 profile.save(update_fields=["accepted_number", "oi_problems_status"])
+
+            elif problem.rule_type == ProblemRuleType.IPC:
+                ipc_problems_status = profile.ipc_problems_status.get("problems", {})
+                time_cost = self.submission.statistic_info["time_cost"]
+                memory_cost = self.submission.statistic_info["memory_cost"]
+                if ipc_problems_status[problem_id]["status"] != JudgeStatus.ACCEPTED:
+                    ipc_problems_status[problem_id]["time_cost"] = time_cost
+                    ipc_problems_status[problem_id]["memory_cost"] = memory_cost
+                    ipc_problems_status[problem_id]["status"] = self.submission.result
+                    if self.submission.result == JudgeStatus.ACCEPTED:
+                        profile.accepted_number += 1
+                profile.ipc_problems_status["problems"] = ipc_problems_status
+                profile.save(update_fields=["accepted_number", "ipc_problems_status"])
 
     def update_problem_status(self):
         result = str(self.submission.result)
@@ -268,7 +281,7 @@ class JudgeDispatcher(DispatcherBase):
                 user_profile.acm_problems_status["problems"] = acm_problems_status
                 user_profile.save(update_fields=["submission_number", "accepted_number", "acm_problems_status"])
 
-            else:
+            elif problem.rule_type == ProblemRuleType.OI:
                 oi_problems_status = user_profile.oi_problems_status.get("problems", {})
                 score = self.submission.statistic_info["score"]
                 if problem_id not in oi_problems_status:
@@ -288,6 +301,19 @@ class JudgeDispatcher(DispatcherBase):
                         user_profile.accepted_number += 1
                 user_profile.oi_problems_status["problems"] = oi_problems_status
                 user_profile.save(update_fields=["submission_number", "accepted_number", "oi_problems_status"])
+
+            elif problem.rule_type == ProblemRuleType.IPC:
+                ipc_problems_status = user_profile.ipc_problems_status.get("problems", {})
+                if problem_id not in ipc_problems_status:
+                    ipc_problems_status[problem_id] = {"status": self.submission.result, "_id": self.problem._id}
+                    if self.submission.result == JudgeStatus.ACCEPTED:
+                        user_profile.accepted_number += 1
+                elif ipc_problems_status[problem_id]["status"] != JudgeStatus.ACCEPTED:
+                    ipc_problems_status[problem_id]["status"] = self.submission.result
+                    if self.submission.result == JudgeStatus.ACCEPTED:
+                        user_profile.accepted_number += 1
+                user_profile.ipc_problems_status["problems"] = ipc_problems_status
+                user_profile.save(update_fields=["submission_number", "accepted_number", "ipc_problems_status"])
 
     def update_contest_problem_status(self):
         with transaction.atomic():
@@ -319,6 +345,22 @@ class JudgeDispatcher(DispatcherBase):
                 user_profile.oi_problems_status["contest_problems"] = contest_problems_status
                 user_profile.save(update_fields=["oi_problems_status"])
 
+            elif self.contest.rule_type == ContestRuleType.IPC:
+                contest_problems_status = user_profile.ipc_problems_status.get("contest_problems", {})
+                time_cost = self.submission.statistic_info["time_cost"]
+                memory_cost = self.submission.statistic_info["memory_cost"]
+                if problem_id not in contest_problems_status:
+                    contest_problems_status[problem_id] = {"status": self.submission.result,
+                                                           "_id": self.problem._id,
+                                                           "time_cost": time_cost,
+                                                           "memory_cost": memory_cost}
+                else:
+                    contest_problems_status[problem_id]["time_cost"] = time_cost
+                    contest_problems_status[problem_id]["memory_cost"] = memory_cost
+                    contest_problems_status[problem_id]["status"] = self.submission.result
+                user_profile.ipc_problems_status["contest_problems"] = contest_problems_status
+                user_profile.save(update_fields=["ipc_problems_status"])
+
             problem = Problem.objects.select_for_update().get(contest_id=self.contest_id, id=self.problem.id)
             result = str(self.submission.result)
             problem_info = problem.statistic_info
@@ -338,9 +380,12 @@ class JudgeDispatcher(DispatcherBase):
         if self.contest.rule_type == ContestRuleType.ACM:
             model = ACMContestRank
             func = self._update_acm_contest_rank
-        else:
+        elif self.contest.rule_type == ContestRuleType.OI:
             model = OIContestRank
             func = self._update_oi_contest_rank
+        elif self.contest.rule_type == ContestRuleType.IPC:
+            model = IPCContestRank
+            func = self._update_ipc_contest_rank
 
         try:
             rank = get_rank(model)
@@ -400,4 +445,20 @@ class JudgeDispatcher(DispatcherBase):
         else:
             rank.total_score = rank.total_score + current_score
         rank.submission_info[problem_id] = current_score
+        rank.save()
+
+    def _update_ipc_contest_rank(self, rank):
+        problem_id = str(self.submission.problem_id)
+
+        info = rank.submission_info.get(problem_id)
+        if not info:
+            info = {"time_cost": None, "memory_cost": None}
+
+        if self.submission.result == JudgeStatus.ACCEPTED:
+            # leave the greatest record
+            if self.submission.statistic_info["time_cost"] < info["time_cost"] and self.submission.statistic_info["memory_cost"] < info["memory_cost"]:
+                info["time_cost"] = self.submission.statistic_info["time_cost"]
+                info["memory_cost"] = self.submission.statistic_info["memory_cost"]
+
+        rank.submission_info[problem_id] = info
         rank.save()
