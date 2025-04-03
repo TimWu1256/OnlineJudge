@@ -79,8 +79,11 @@ class ACMContestRank(AbstractContestRank):
 
 class OIContestRank(AbstractContestRank):
     total_score = models.IntegerField(default=0)
+
+    # add runtime and memory info (by wtf)
     runtime = models.IntegerField(default=0)
     memory = models.IntegerField(default=0)
+
     # {"23": 333}
     # key is problem id, value is current score
     submission_info = JSONField(default=dict)

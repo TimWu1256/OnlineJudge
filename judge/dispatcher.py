@@ -401,6 +401,7 @@ class JudgeDispatcher(DispatcherBase):
         else:
             rank.total_score = rank.total_score + current_score
 
+        # add update for runtime and memory (by wtf)
         rank.runtime = self.submission.statistic_info["time_cost"]
         rank.memory = self.submission.statistic_info["memory_cost"]
 

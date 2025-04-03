@@ -110,6 +110,7 @@ class ContestRankAPI(APIView):
                                                  user__is_disabled=False).\
                 select_related("user").order_by("-accepted_number", "total_time")
         else:
+            # add order fields (by wtf)
             return OIContestRank.objects.filter(contest=self.contest,
                                                 user__admin_type=AdminType.REGULAR_USER,
                                                 user__is_disabled=False). \
@@ -154,8 +155,11 @@ class ContestRankAPI(APIView):
             worksheet.write("C1", "Real Name")
             if self.contest.rule_type == ContestRuleType.OI:
                 worksheet.write("D1", "Total Score")
+
+                # add runtime and memory fields (by wtf)
                 worksheet.write("E1", "Runtime")
                 worksheet.write("F1", "Memory")
+
                 for item in range(contest_problems.count()):
                     worksheet.write(self.column_string(7 + item) + "1", f"{contest_problems[item].title}")
                 for index, item in enumerate(data):
@@ -163,8 +167,12 @@ class ContestRankAPI(APIView):
                     worksheet.write_string(index + 1, 1, item["user"]["username"])
                     worksheet.write_string(index + 1, 2, item["user"]["real_name"] or "")
                     worksheet.write_string(index + 1, 3, str(item["total_score"]))
+
+                    # add runtime and memory fields (by wtf)
                     worksheet.write_string(index + 1, 4, str(item["time_cost"]))
                     worksheet.write_string(index + 1, 5, str(item["memory_cost"]))
+
+                    # add runtime and memory fields (by wtf)
                     for k, v in item["submission_info"].items():
                         worksheet.write_string(index + 1, 6 + problem_ids.index(int(k)), str(v))
             else:
