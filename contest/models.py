@@ -84,6 +84,9 @@ class OIContestRank(AbstractContestRank):
     runtime = models.IntegerField(default=0)
     memory = models.IntegerField(default=0)
 
+    # add submission id (by wtf)
+    submission_id = models.CharField(max_length=32, default="")
+
     # {"23": 333}
     # key is problem id, value is current score
     submission_info = JSONField(default=dict)

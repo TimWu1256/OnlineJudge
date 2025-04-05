@@ -169,8 +169,8 @@ class ContestRankAPI(APIView):
                     worksheet.write_string(index + 1, 3, str(item["total_score"]))
 
                     # add runtime and memory fields (by wtf)
-                    worksheet.write_string(index + 1, 4, str(item["time_cost"]))
-                    worksheet.write_string(index + 1, 5, str(item["memory_cost"]))
+                    worksheet.write_string(index + 1, 4, str(item["runtime"]))
+                    worksheet.write_string(index + 1, 5, str(item["memory"]))
 
                     # add runtime and memory fields (by wtf)
                     for k, v in item["submission_info"].items():

@@ -1,0 +1,16 @@
+django==3.2
+djangorestframework==3.13.1
+django-dramatiq
+django-dbconn-retry
+django-redis
+envelopes
+redis
+raven
+psycopg2-binary
+pillow
+qrcode
+otpauth==0.1.2
+xlsxwriter
+requests
+python-dateutil
+jsonfield

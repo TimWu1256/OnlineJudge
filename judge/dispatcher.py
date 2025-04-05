@@ -405,5 +405,8 @@ class JudgeDispatcher(DispatcherBase):
         rank.runtime = self.submission.statistic_info["time_cost"]
         rank.memory = self.submission.statistic_info["memory_cost"]
 
+        # add update for submission id (by wtf)
+        rank.submission_id = self.submission.id
+
         rank.submission_info[problem_id] = current_score
         rank.save()
