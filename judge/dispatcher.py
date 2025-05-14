@@ -144,7 +144,7 @@ class JudgeDispatcher(DispatcherBase):
             "max_cpu_time": self.problem.time_limit,
             "max_memory": 1024 * 1024 * self.problem.memory_limit,
             "test_case_id": self.problem.test_case_id,
-            "output": False,
+            "output": True, # return answer of user
             "spj_version": self.problem.spj_version,
             "spj_config": spj_config.get("config"),
             "spj_compile_config": spj_config.get("compile"),
@@ -401,9 +401,8 @@ class JudgeDispatcher(DispatcherBase):
         else:
             rank.total_score = rank.total_score + current_score
 
-        # add update for runtime and memory (by wtf)
-        rank.runtime = self.submission.statistic_info["time_cost"]
-        rank.memory = self.submission.statistic_info["memory_cost"]
+        # add update for distance (by wtf)
+        rank.distance = self.submission.info["data"][0]["output"]
 
         # add update for submission id (by wtf)
         rank.submission_id = self.submission.id

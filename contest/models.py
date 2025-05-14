@@ -80,9 +80,8 @@ class ACMContestRank(AbstractContestRank):
 class OIContestRank(AbstractContestRank):
     total_score = models.IntegerField(default=0)
 
-    # add runtime and memory info (by wtf)
-    runtime = models.IntegerField(default=0)
-    memory = models.IntegerField(default=0)
+    # add distance info (by wtf)
+    distance = models.IntegerField(default=0)
 
     # add submission id (by wtf)
     submission_id = models.CharField(max_length=32, default="")
