@@ -401,8 +401,8 @@ class JudgeDispatcher(DispatcherBase):
         else:
             rank.total_score = rank.total_score + current_score
 
-        # add update for distance (by wtf)
-        rank.distance = self.submission.info["data"][0]["output"]
+        # add update for weight (by wtf)
+        rank.weight = self.submission.info["data"][0]["output"]
 
         # add update for submission id (by wtf)
         rank.submission_id = self.submission.id

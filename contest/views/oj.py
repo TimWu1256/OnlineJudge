@@ -114,7 +114,7 @@ class ContestRankAPI(APIView):
             return OIContestRank.objects.filter(contest=self.contest,
                                                 user__admin_type=AdminType.REGULAR_USER,
                                                 user__is_disabled=False). \
-                select_related("user").order_by("-total_score", "distance")
+                select_related("user").order_by("-total_score", "-weight")
 
     def column_string(self, n):
         string = ""
@@ -156,8 +156,8 @@ class ContestRankAPI(APIView):
             if self.contest.rule_type == ContestRuleType.OI:
                 worksheet.write("D1", "Total Score")
 
-                # add distance fields (by wtf)
-                worksheet.write("E1", "Distance")
+                # add weight fields (by wtf)
+                worksheet.write("E1", "Weight")
 
                 for item in range(contest_problems.count()):
                     worksheet.write(self.column_string(7 + item) + "1", f"{contest_problems[item].title}")
@@ -167,10 +167,10 @@ class ContestRankAPI(APIView):
                     worksheet.write_string(index + 1, 2, item["user"]["real_name"] or "")
                     worksheet.write_string(index + 1, 3, str(item["total_score"]))
 
-                    # add distance fields (by wtf)
-                    worksheet.write_string(index + 1, 4, str(item["distance"]))
+                    # add weight fields (by wtf)
+                    worksheet.write_string(index + 1, 4, str(item["weight"]))
 
-                    # add distance fields (by wtf)
+                    # add weight fields (by wtf)
                     for k, v in item["submission_info"].items():
                         worksheet.write_string(index + 1, 5 + problem_ids.index(int(k)), str(v))
             else:
