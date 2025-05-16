@@ -402,7 +402,7 @@ class JudgeDispatcher(DispatcherBase):
             rank.total_score = rank.total_score + current_score
 
         # add update for weight (by wtf)
-        rank.weight = self.submission.info["data"][0]["output"]
+        rank.weight = self.submission.info["data"][0]["output"].splitlines()[0]
 
         # add update for submission id (by wtf)
         rank.submission_id = self.submission.id
