@@ -5,7 +5,7 @@ WORKDIR /app
 RUN <<EOS
 set -ex
 apk add unzip
-wget https://github.com/TimWu1256/OnlineJudgeFE/releases/download/ipc_1.0.0/dist.zip
+wget https://github.com/QingdaoU/OnlineJudgeFE/releases/download/oj_2.7.5/dist.zip
 unzip dist.zip
 rm -f dist.zip
 EOS
