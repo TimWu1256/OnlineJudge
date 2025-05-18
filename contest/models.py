@@ -82,6 +82,7 @@ class OIContestRank(AbstractContestRank):
 
     # add weight info (by wtf)
     weight = models.IntegerField(default=0)
+    penalties = models.JSONField(default=dict)
 
     # add submission id (by wtf)
     submission_id = models.CharField(max_length=32, default="")

@@ -396,16 +396,42 @@ class JudgeDispatcher(DispatcherBase):
         current_score = self.submission.statistic_info["score"]
         last_score = rank.submission_info.get(problem_id)
 
-        if last_score:
-            rank.total_score = rank.total_score - last_score + current_score
-        else:
-            rank.total_score = rank.total_score + current_score
+        # add by wtf
+        ac_target = -1
+        data_len = len(self.submission.info["data"])
+        for i in range(data_len):
+            if self.submission.info["data"][data_len-i-1]["result"] == JudgeStatus.ACCEPTED:
+                ac_target = data_len-i-1
+                break
+        current_output = self.submission.info["data"][ac_target]["output"].splitlines()
+        if len(current_output) != 6:
+            return
+        current_weight = int(current_output[0])
+        current_penalties = {
+            "nonAdjacentPenalty": int(current_output[1]),
+            "repeatPenalty": int(current_output[2]),
+            "missingPenalty": int(current_output[3]),
+            "smallCliquePenalty": int(current_output[4]),
+            "cliqueCountPenalty": int(current_output[5])
+        }
+        try:
+            last_weight = int(rank.weight)
+        except (TypeError, ValueError):
+            last_weight = None
 
-        # add update for weight (by wtf)
-        rank.weight = self.submission.info["data"][0]["output"].splitlines()[0]
+        # 分數變高，更新分數、weight、id
+        if last_score is None or current_score > last_score:
+            rank.total_score = (rank.total_score - last_score + current_score) if last_score else (rank.total_score + current_score)
+            rank.submission_info[problem_id] = current_score
+            rank.weight = current_weight
+            rank.penalties = current_penalties
+            rank.submission_id = self.submission.id
+            rank.save()
+            return
 
-        # add update for submission id (by wtf)
-        rank.submission_id = self.submission.id
-
-        rank.submission_info[problem_id] = current_score
-        rank.save()
+        # 分數不變但 weight 變高，更新 weight、id
+        if last_score == current_score and (last_weight is None or current_weight > last_weight):
+            rank.weight = current_weight
+            rank.penalties = current_penalties
+            rank.submission_id = self.submission.id
+            rank.save()
