@@ -114,7 +114,7 @@ class ContestRankAPI(APIView):
             return OIContestRank.objects.filter(contest=self.contest,
                                                 user__admin_type=AdminType.REGULAR_USER,
                                                 user__is_disabled=False). \
-                select_related("user").order_by("-total_score", "-weight")
+                select_related("user").order_by("-total_score", "-average_weight")
 
     def column_string(self, n):
         string = ""
@@ -157,7 +157,7 @@ class ContestRankAPI(APIView):
                 worksheet.write("D1", "Total Score")
 
                 # add weight fields (by wtf)
-                worksheet.write("E1", "Weight")
+                worksheet.write("E1", "Average Weight")
 
                 for item in range(contest_problems.count()):
                     worksheet.write(self.column_string(7 + item) + "1", f"{contest_problems[item].title}")
@@ -168,7 +168,7 @@ class ContestRankAPI(APIView):
                     worksheet.write_string(index + 1, 3, str(item["total_score"]))
 
                     # add weight fields (by wtf)
-                    worksheet.write_string(index + 1, 4, str(item["weight"]))
+                    worksheet.write_string(index + 1, 4, f'{item["average_weight"]}')
 
                     # add weight fields (by wtf)
                     for k, v in item["submission_info"].items():

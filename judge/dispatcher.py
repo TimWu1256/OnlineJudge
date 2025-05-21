@@ -396,42 +396,43 @@ class JudgeDispatcher(DispatcherBase):
         current_score = self.submission.statistic_info["score"]
         last_score = rank.submission_info.get(problem_id)
 
-        # add by wtf
-        ac_target = -1
-        data_len = len(self.submission.info["data"])
-        for i in range(data_len):
-            if self.submission.info["data"][data_len-i-1]["result"] == JudgeStatus.ACCEPTED:
-                ac_target = data_len-i-1
-                break
-        current_output = self.submission.info["data"][ac_target]["output"].splitlines()
-        if len(current_output) != 6:
-            return
-        current_weight = int(current_output[0])
-        current_penalties = {
-            "nonAdjacentPenalty": int(current_output[1]),
-            "repeatPenalty": int(current_output[2]),
-            "missingPenalty": int(current_output[3]),
-            "smallCliquePenalty": int(current_output[4]),
-            "cliqueCountPenalty": int(current_output[5])
-        }
-        try:
-            last_weight = int(rank.weight)
-        except (TypeError, ValueError):
-            last_weight = None
+        # # 取得最佳 AC 測資的 output，並解析
+        # ac_target = None
+        # data = self.submission.info["data"]
+        # for i in reversed(range(len(data))):
+        #     if data[i]["result"] == JudgeStatus.ACCEPTED:
+        #         ac_target = i
+        #         break
+        # if ac_target == None:
+        #     ac_target = -1
 
-        # 分數變高，更新分數、weight、id
+        current_output = self.submission.info["data"][-1]["output"].splitlines()
+        current_average_weight = float(current_output[0])
+        current_violations = {
+            "nonAdjacentPair": int(current_output[1]),
+            "repeatNode": int(current_output[2]),
+            "missingNode": int(current_output[3]),
+            "cliqueSize": int(current_output[4]),
+        }
+
+        try:
+            last_average_weight = float(rank.average_weight)
+        except (TypeError, ValueError):
+            last_average_weight = None
+
+        updated = False
+
+        # 分數提升，或首次提交
         if last_score is None or current_score > last_score:
             rank.total_score = (rank.total_score - last_score + current_score) if last_score else (rank.total_score + current_score)
             rank.submission_info[problem_id] = current_score
-            rank.weight = current_weight
-            rank.penalties = current_penalties
-            rank.submission_id = self.submission.id
-            rank.save()
-            return
+            updated = True
+        # 分數相同但 average_weight 提升
+        elif current_score == last_score and (last_average_weight is None or current_average_weight > last_average_weight):
+            updated = True
 
-        # 分數不變但 weight 變高，更新 weight、id
-        if last_score == current_score and (last_weight is None or current_weight > last_weight):
-            rank.weight = current_weight
-            rank.penalties = current_penalties
+        if updated:
+            rank.average_weight = current_average_weight
+            rank.violations = current_violations
             rank.submission_id = self.submission.id
             rank.save()
